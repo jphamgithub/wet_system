@@ -18,6 +18,9 @@ from PIL import Image, ImageTk
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+# Get the absolute path to the script's directory
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+
 # API URLs
 WATERLOG_API = "http://127.0.0.1:5001/history"
 LIVE_TRACK_API = "http://127.0.0.1:5001/log"
@@ -33,11 +36,14 @@ class ViewPortApp:
         self.root = root
         self.root.title("🚀 W.E.T. System Dashboard")
 
-        # Load Toilet Image
-        img = Image.open("gui/toilet.png").resize((150, 150))
-        self.toilet_img = ImageTk.PhotoImage(img)
-        img_label = tk.Label(root, image=self.toilet_img)
-        img_label.pack()
+        # Define image paths
+        self.toilet_img_path = os.path.join(BASE_DIR, "gui", "toilet.png")
+        self.poop_img_path = os.path.join(BASE_DIR, "gui", "spacepoop.png")
+
+        # Load the toilet image initially
+        self.toilet_img = ImageTk.PhotoImage(Image.open(self.toilet_img_path).resize((150, 150)))
+        self.img_label = tk.Label(root, image=self.toilet_img)
+        self.img_label.pack()
 
         # Status Label
         self.status_label = tk.Label(root, text="System Status: Loading...", font=("Arial", 12, "bold"))
@@ -61,7 +67,7 @@ class ViewPortApp:
         # Nearby Planets & Stations
         self.planet_label = tk.Label(root, text="🪐 Nearby Planet: Loading...", font=("Arial", 10, "bold"))
         self.planet_label.pack()
-        
+
         self.station_label = tk.Label(root, text="🏠 Nearby Station: Loading...", font=("Arial", 10, "bold"))
         self.station_label.pack()
 
@@ -117,22 +123,21 @@ class ViewPortApp:
             if not events:
                 return  # No data available yet
 
-            # ✅ Show all events (not just last 5)
+            # Show all events
             for event in events:
                 details = event.get("waste_volume") or event.get("water_added") or event.get("planet_name") or "N/A"
                 self.tree.insert("", "end", values=(event["event_type"], details, event["timestamp"]))
 
-            # ✅ Update system status based on latest data
+            # Update system status based on latest data
             flushes = sum(1 for e in events if e["event_type"] == "flush")
             self.status_label.config(text=f"System Status: Running\nTotal Flushes: {flushes}\nWater Level: OK")
 
         except Exception as e:
             self.status_label.config(text="❌ Error fetching event data!")
 
-        # ✅ Auto-refresh every 5 seconds
+        # Auto-refresh every 5 seconds
         self.root.after(5000, self.fetch_event_history)
-
-
+    
     def update_chart(self):
         """Fetches event data and updates the bar chart."""
         try:
@@ -189,17 +194,26 @@ class ViewPortApp:
             self.station_label.config(text="🏠 Nearby Station: Unknown")
 
     def send_flush_event(self):
-        """Manually logs a flush event to WaterLog API with a proper timestamp."""
+        """Manually logs a flush event and temporarily changes the image."""
         event_data = {
             "event_type": "flush",
-            "waste_volume": 3,  # Example value
-            "timestamp": time.time()  # ✅ Ensure timestamp is included
+            "waste_volume": 3,
+            "timestamp": time.time()
         }
         response = requests.post(LIVE_TRACK_API, json=event_data)
+
         if response.status_code == 201:
             print("✅ Flush event logged successfully.")
+            self.toilet_img = ImageTk.PhotoImage(Image.open(self.poop_img_path).resize((150, 150)))
+            self.img_label.config(image=self.toilet_img)
+            self.root.after(2000, self.reset_toilet_image)  # Reset after 2 seconds
         else:
             print(f"❌ Failed to log flush event. Response: {response.text}")
+
+    def reset_toilet_image(self):
+        """Resets the image back to the toilet after showing the poop image."""
+        self.toilet_img = ImageTk.PhotoImage(Image.open(self.toilet_img_path).resize((150, 150)))
+        self.img_label.config(image=self.toilet_img)
 
     def send_water_refill(self):
         """Manually logs a water refill event with a proper timestamp."""
