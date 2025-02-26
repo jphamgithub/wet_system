@@ -10,6 +10,7 @@ import zmq
 import requests
 import json
 
+
 # ZeroMQ Subscriber Setup
 context = zmq.Context()
 socket = context.socket(zmq.SUB)
