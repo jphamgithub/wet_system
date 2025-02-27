@@ -28,6 +28,6 @@ pip install -r requirements.txt
 
 ## **🎯 Running the System**
 ```bash
-python main_program.py
+python3 main_program.py
 ```
 

@@ -65,10 +65,10 @@ class ViewPortApp:
         self.quote_label.pack(pady=5)
 
         # Nearby Planets & Stations
-        self.planet_label = tk.Label(root, text="🪐 Nearby Planet: Loading...", font=("Arial", 10, "bold"))
+        self.planet_label = tk.Label(root, text="🪐 Nearby Planet If You've Been Flushing too much: Loading...", font=("Arial", 10, "bold"))
         self.planet_label.pack()
 
-        self.station_label = tk.Label(root, text="🏠 Nearby Station: Loading...", font=("Arial", 10, "bold"))
+        self.station_label = tk.Label(root, text="🏠 Nearby Station for plumbing services: Loading...", font=("Arial", 10, "bold"))
         self.station_label.pack()
 
         # Buttons Frame
