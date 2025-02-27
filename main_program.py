@@ -11,42 +11,52 @@ Launches and manages the microservices:
 import subprocess
 import time
 import logging
+import signal
+import sys
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# Start Microservices with small delays to prevent race conditions
-logging.info("🚀 Starting W.E.T. System Microservices...")
+# Store process references
+processes = {}
 
-try:
-    logging.info("🔹 Starting WaterLog (Flask API & SQLite)")
-    water_log = subprocess.Popen(["python3", "./microservices/WaterLog/water_log.py"])
-    time.sleep(2)  # Ensure API is ready
+def start_process(name, command, delay=0):
+    """Starts a subprocess and stores it in the processes dictionary."""
+    logging.info(f"🔹 Starting {name}...")
+    try:
+        proc = subprocess.Popen(command)
+        processes[name] = proc
+        time.sleep(delay)  # Give time for startup if needed
+    except Exception as e:
+        logging.error(f"❌ Failed to start {name}: {e}")
+        shutdown()
+        sys.exit(1)
 
-    logging.info("🔹 Starting LiveTrack (ZeroMQ Listener)")
-    live_track = subprocess.Popen(["python3", "./microservices/LiveTrack/live_track.py"])
-    time.sleep(1)
-
-    logging.info("🔹 Starting Simulator (Astronaut Events Generator)")
-    simulator = subprocess.Popen(["python3", "./microservices/Simulator/simulator.py"])
-    time.sleep(1)
-
-    logging.info("🔹 Starting ViewPort (Tkinter GUI)")
-    view_port = subprocess.Popen(["python3", "./microservices/ViewPort/view_port.py"])
-
-    logging.info("✅ W.E.T. System is now running.")
-
-    # Keep the main process running while microservices run
-    while True:
-        time.sleep(1)
-
-except KeyboardInterrupt:
+def shutdown(signum=None, frame=None):
+    """Gracefully shuts down all running microservices."""
     logging.info("🔴 Shutting down W.E.T. System...")
 
-    # Terminate each microservice gracefully
-    live_track.terminate()
-    water_log.terminate()
-    view_port.terminate()
-    simulator.terminate()
+    for name, proc in processes.items():
+        logging.info(f"🛑 Stopping {name}...")
+        proc.terminate()
+        proc.wait()  # Ensure the process is fully stopped
 
     logging.info("✅ All microservices have been stopped.")
+    sys.exit(0)
+
+# Handle manual interrupts (Ctrl+C)
+signal.signal(signal.SIGINT, shutdown)
+
+# Start Microservices
+logging.info("🚀 Starting W.E.T. System Microservices...")
+
+start_process("WaterLog (Flask API & SQLite)", ["python3", "./microservices/WaterLog/water_log.py"], delay=2)
+start_process("LiveTrack (ZeroMQ Listener)", ["python3", "./microservices/LiveTrack/live_track.py"], delay=1)
+start_process("Simulator (Astronaut Events Generator)", ["python3", "./microservices/Simulator/simulator.py"], delay=1)
+start_process("ViewPort (Tkinter GUI)", ["python3", "./microservices/ViewPort/view_port.py"])
+
+logging.info("✅ W.E.T. System is now running.")
+
+# Keep running until interrupted
+while True:
+    time.sleep(1)

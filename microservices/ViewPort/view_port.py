@@ -233,6 +233,7 @@ class ViewPortApp:
         global simulator_process
         if simulator_process:
             simulator_process.terminate()
+            simulator_process.wait()  # ✅ Ensure process is fully terminated
             simulator_process = None
             self.simulator_status.set("▶ Resume Simulator")
         else:
