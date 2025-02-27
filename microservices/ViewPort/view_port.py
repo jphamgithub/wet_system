@@ -8,11 +8,14 @@ ViewPort: GUI for W.E.T. System
 - Fetches random motivational quotes, planets, and stations from Name Generator Microservice.
 """
 
+import psutil 
+import subprocess
+import threading
 import time
 import tkinter as tk
 from tkinter import ttk
 import requests
-import subprocess
+import time
 import os
 from PIL import Image, ImageTk
 import matplotlib.pyplot as plt
@@ -229,23 +232,50 @@ class ViewPortApp:
             print(f"❌ Failed to log water refill event. Response: {response.text}")
 
     def toggle_simulator(self):
-        """Pauses or resumes the simulator."""
+        """Pauses or resumes the simulator process without freezing GUI."""
         global simulator_process
+
         if simulator_process:
-            simulator_process.terminate()
-            simulator_process.wait()  # ✅ Ensure process is fully terminated
-            simulator_process = None
-            self.simulator_status.set("▶ Resume Simulator")
+            # Run stopping logic in a separate thread to avoid freezing GUI
+            threading.Thread(target=self.stop_simulator, daemon=True).start()
         else:
             self.start_simulator()
-            self.simulator_status.set("⏸ Pause Simulator")
+
+    def stop_simulator(self):
+        """Kills all simulator instances without blocking the GUI."""
+        print("🚫 Stopping Simulator...")
+
+        # Kill all running simulator processes
+        subprocess.run(["pkill", "-f", "simulator.py"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        time.sleep(1)  # Allow process cleanup
+
+        # Double-check if it's still running
+        for proc in psutil.process_iter(attrs=['pid', 'cmdline']):
+            if proc.info['cmdline'] and "simulator.py" in " ".join(proc.info['cmdline']):
+                print(f"⚠️ Simulator process {proc.info['pid']} is still running! Killing it...")
+                proc.terminate()
+                proc.wait(timeout=3)
+
+        self.simulator_status.set("▶ Resume Simulator")
+        print("✅ Simulator Fully Paused.")
+        global simulator_process
+        simulator_process = None
 
     def start_simulator(self):
         """Starts the simulator process."""
+        print("✅ Starting Simulator...")
         global simulator_process
-        simulator_process = subprocess.Popen(["python3", "./microservices/Simulator/simulator.py"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        simulator_process = subprocess.Popen(
+            ["python3", "./microservices/Simulator/simulator.py"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+        self.simulator_status.set("⏸ Pause Simulator")
+        print("🚀 Simulator Running.")
 
 if __name__ == "__main__":
     root = tk.Tk()
     app = ViewPortApp(root)
     root.mainloop()
+
+

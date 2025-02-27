@@ -1,35 +1,31 @@
 # 🚀 W.E.T. System Dependencies
+
+# Web Framework & API
+flask        # Flask: Lightweight web framework to expose WaterLog API
+
+# Messaging (ZeroMQ)
+pyzmq        # PyZMQ: Enables real-time communication between microservices (LiveTrack & Simulator)
+
+# GUI & Visualization
+matplotlib   # Matplotlib: Library for plotting waste usage graphs in ViewPort GUI
+Pillow       # Pillow: Image processing library, needed for GUI image loading (e.g., toilet.png)
+
+# Networking & Requests
+requests     # Requests: Library to send HTTP requests (LiveTrack logs events to WaterLog)
+
+# System & Process Management
+psutil       # psutil: Used for monitoring and managing processes in ViewPort
+
+# Scientific Computation (if needed later)
+numpy        # NumPy: Efficient array handling
+
+# Additional Notes:
+# If using a virtual environment:
 # python3 -m venv venv
 # source venv/bin/activate
 # pip install -r requirements.txt
-# OR
-# pip install --break-system-packages -r requirements.txt
+# May need 
+# pip install -r requirements.txt --break-system-packages
 
-# --- Web Framework & API ---
-flask       # Flask: Lightweight web framework to expose WaterLog API
-
-# --- Database ---
-#sqlite3     # SQLite: Lightweight SQL database (included with Python, but ensuring support) 
-
-
-# --- Messaging (ZeroMQ) ---
-pyzmq       # PyZMQ: Enables real-time communication between microservices (LiveTrack & Simulator)
-
-# --- GUI & Visualization ---
-#tkinter     # Tkinter: Python's built-in GUI framework for ViewPort (Toilet animation & display)
-#'''
-#Tkinter may fail use
-#sudo apt update
-#sudo apt install python3-tk -y
-
-#'''
-
-
-matplotlib  # Matplotlib: Library for plotting waste usage graphs in ViewPort GUI
-Pillow      # Pillow: Image processing library, needed for GUI image loading (e.g., toilet.png)
-
-# --- Networking & Requests ---
-requests    # Requests: Library to send HTTP requests (LiveTrack logs events to WaterLog)
-
-# --- Scientific Computation ---
-numpy       # NumPy: Efficient array handling, used for data calculations (if needed later)
+# If tkinter is needed and missing:
+# sudo apt update && sudo apt install python3-tk -y

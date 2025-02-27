@@ -5,7 +5,6 @@ Launches and manages the microservices:
 - LiveTrack (ZeroMQ)
 - WaterLog (SQLite & Flask API)
 - ViewPort (Tkinter GUI)
-- Simulator (Astronaut Flushes)
 """
 
 import subprocess
@@ -47,15 +46,14 @@ def shutdown(signum=None, frame=None):
 # Handle manual interrupts (Ctrl+C)
 signal.signal(signal.SIGINT, shutdown)
 
-# Start Microservices
+# Start Microservices (EXCLUDING SIMULATOR)
 logging.info("🚀 Starting W.E.T. System Microservices...")
 
 start_process("WaterLog (Flask API & SQLite)", ["python3", "./microservices/WaterLog/water_log.py"], delay=2)
 start_process("LiveTrack (ZeroMQ Listener)", ["python3", "./microservices/LiveTrack/live_track.py"], delay=1)
-start_process("Simulator (Astronaut Events Generator)", ["python3", "./microservices/Simulator/simulator.py"], delay=1)
 start_process("ViewPort (Tkinter GUI)", ["python3", "./microservices/ViewPort/view_port.py"])
 
-logging.info("✅ W.E.T. System is now running.")
+logging.info("✅ W.E.T. System is now running (Simulator NOT Started).")
 
 # Keep running until interrupted
 while True:
