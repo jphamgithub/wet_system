@@ -86,6 +86,20 @@ def get_history():
 
     return jsonify(events)
 
+@app.route('/clear', methods=['POST'])
+def clear_database():
+    """
+    Clears all records from the events table.
+    """
+    conn = sqlite3.connect(DATABASE)
+    c = conn.cursor()
+    c.execute("DELETE FROM events")  # Remove all data
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "Database cleared"}), 200
+
+
 if __name__ == '__main__':
     init_db()
     app.run(host='0.0.0.0', port=5001, debug=True)

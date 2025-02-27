@@ -81,25 +81,29 @@ class ViewPortApp:
         # Control Buttons
         self.simulator_status = tk.StringVar(value="⏸ Pause Simulator")
         self.sim_button = tk.Button(button_frame, textvariable=self.simulator_status, command=self.toggle_simulator)
-        self.sim_button.grid(row=0, column=0, padx=5)
+        self.sim_button.grid(row=0, column=1, padx=5)
 
-        self.flush_button = tk.Button(button_frame, text="🚽 Flush", command=self.send_flush_event)
-        self.flush_button.grid(row=0, column=1, padx=5)
+        self.flush_button = tk.Button(button_frame, text="🚽 Remote Send Flush from Terminal (If you smell something)", command=self.send_flush_event)
+        self.flush_button.grid(row=1, column=1, padx=5)
 
-        self.refill_button = tk.Button(button_frame, text="💧 Refill Water", command=self.send_water_refill)
-        self.refill_button.grid(row=0, column=2, padx=5)
+        self.refill_button = tk.Button(button_frame, text="💧 Hyper Drive to Closest Planet and Refill Water", command=self.send_water_refill)
+        self.refill_button.grid(row=2, column=1, padx=5)
 
-        self.quote_button = tk.Button(button_frame, text="🌟 New Quote", command=self.fetch_motivational_quote)
-        self.quote_button.grid(row=1, column=0, padx=5)
+        self.quote_button = tk.Button(button_frame, text="🌟 Feeling lonely in space?", command=self.fetch_motivational_quote)
+        self.quote_button.grid(row=3, column=1, padx=5)
 
-        self.planet_button = tk.Button(button_frame, text="🪐 Random Planet", command=self.fetch_nearby_planet)
-        self.planet_button.grid(row=1, column=1, padx=5)
+        self.planet_button = tk.Button(button_frame, text="🪐 Nearby Planet Lookup", command=self.fetch_nearby_planet)
+        self.planet_button.grid(row=4, column=1, padx=5)
 
-        self.station_button = tk.Button(button_frame, text="🏠 Random Station", command=self.fetch_nearby_station)
-        self.station_button.grid(row=1, column=2, padx=5)
+        self.station_button = tk.Button(button_frame, text="🏠 Nearby Station Lookup", command=self.fetch_nearby_station)
+        self.station_button.grid(row=5, column=1, padx=5)
 
-        self.refresh_button = tk.Button(root, text="🔄 Refresh Dashboard", command=self.update_data)
+        self.refresh_button = tk.Button(root, text="🔄 Refresh Toilet Optimization Dashboard", command=self.update_data)
         self.refresh_button.pack(pady=5)
+
+        self.clear_button = tk.Button(root, text="🗑 Reset System!", command=self.clear_database)
+        self.clear_button.pack(pady=5)
+
 
         # Start Simulator Automatically
         self.start_simulator()
@@ -181,20 +185,23 @@ class ViewPortApp:
             self.quote_label.config(text="🚀 Keep pushing forward, astronaut! 🌌")
 
     def fetch_nearby_planet(self):
-        """Calls name_generator.py to fetch a random planet."""
+        """Fetches a random planet and ties it to the toilet system."""
         try:
             planet = subprocess.check_output(["python3", NAME_GEN_PATH, "--planet"], text=True).strip()
-            self.planet_label.config(text=f"🪐 Nearby Planet: {planet}")
+            message = f"🪐 {planet} has rich water resources! Consider refilling the system there."
+            self.planet_label.config(text=message)
         except Exception:
-            self.planet_label.config(text="🪐 Nearby Planet: Unknown")
+            self.planet_label.config(text="🪐 Unknown planet detected. Water status uncertain.")
+
 
     def fetch_nearby_station(self):
-        """Calls name_generator.py to fetch a random station."""
+        """Fetches a nearby station and suggests plumbing services."""
         try:
             station = subprocess.check_output(["python3", NAME_GEN_PATH, "--station"], text=True).strip()
-            self.station_label.config(text=f"🏠 Nearby Station: {station}")
+            message = f"🏠 {station} offers expert plumbing repairs for your space toilet!"
+            self.station_label.config(text=message)
         except Exception:
-            self.station_label.config(text="🏠 Nearby Station: Unknown")
+            self.station_label.config(text="🏠 No plumbing stations nearby. Proceed with caution!")
 
     def send_flush_event(self):
         """Manually logs a flush event and temporarily changes the image."""
@@ -272,6 +279,16 @@ class ViewPortApp:
         )
         self.simulator_status.set("⏸ Pause Simulator")
         print("🚀 Simulator Running.")
+
+    def clear_database(self):
+        """Sends a request to WaterLog API to clear all stored events."""
+        response = requests.post("http://127.0.0.1:5001/clear")
+        
+        if response.status_code == 200:
+            print("✅ Database successfully cleared.")
+            self.update_data()  # Refresh the UI after clearing
+        else:
+            print("❌ Failed to clear database. Response:", response.text)
 
 if __name__ == "__main__":
     root = tk.Tk()
