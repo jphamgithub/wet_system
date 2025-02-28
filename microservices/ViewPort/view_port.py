@@ -20,7 +20,8 @@ import os
 from PIL import Image, ImageTk
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from datetime import datetime
+from datetime import datetime, timedelta
+from matplotlib.ticker import FuncFormatter
 
 # Get the absolute path to the script's directory
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
@@ -151,9 +152,24 @@ class ViewPortApp:
         self.station_button.grid(row=7, column=0, columnspan=2, padx=5, pady=2, sticky='ew')
 
         # Add a new button for full refill and balance
-        self.full_refill_button = tk.Button(button_frame, text="🌍 Full Refill & Balance", command=self.full_refill_and_balance)
+        self.full_refill_button = tk.Button(button_frame, text="🌍 Massive Water Refill", command=self.full_refill_and_balance)
         self.full_refill_button.grid(row=4, column=1, padx=5, pady=2, sticky='ew')
         self.full_refill_button.config(**button_style)
+
+        # Add a new button for simulating massive waste flush
+        self.massive_flush_button = tk.Button(button_frame, text="🚽 Massive Waste Event", command=self.simulate_massive_flush)
+        self.massive_flush_button.grid(row=4, column=0, padx=5, pady=2, sticky='ew')
+        self.massive_flush_button.config(**button_style)
+
+        # Add a button to open the astronaut-specific guide file
+        self.astronaut_readme_button = tk.Button(button_frame, text="📘 Astronaut Guide", command=self.open_astronaut_readme)
+        self.astronaut_readme_button.grid(row=11, column=0, columnspan=2, padx=5, pady=2, sticky='ew')
+        self.astronaut_readme_button.config(**button_style)
+
+        # Add a button to open the picture book explanation
+        self.picture_book_button = tk.Button(button_frame, text="📖 Picture Book Explanation", command=self.open_picture_book)
+        self.picture_book_button.grid(row=12, column=0, columnspan=2, padx=5, pady=2, sticky='ew')
+        self.picture_book_button.config(**button_style)
 
         # ---- System Maintenance ----
         tk.Label(button_frame, text="🛠 System Maintenance", font=("Arial", 10, "bold")).grid(row=8, column=0, columnspan=2)
@@ -177,8 +193,16 @@ class ViewPortApp:
         self.start_simulator()
         self.update_data()
 
+        # Automatically send 5 flush events to populate the chart
+        for _ in range(5):
+            self.send_flush_event()
+
         # Pack the image label at the top
         self.img_label.pack(side="top", expand=False, fill='both', pady=10)
+
+        # Simulate pressing the left arrow key on the horizontal scrollbar four times
+        for _ in range(4):
+            self.canvas.xview_scroll(-1, 'units')
 
     def update_data(self):
         """Fetches and updates event data, charts, and motivational quote."""
@@ -335,19 +359,23 @@ class ViewPortApp:
             print("❌ Failed to clear database. Response:", response.text)
 
     def full_refill_and_balance(self):
-        """Performs a full refill and balances the water-to-flush ratio."""
+        """Simulates a full refill by sending multiple water refill events with recent timestamps."""
         try:
-            flushes = sum(1 for e in requests.get(WATERLOG_API).json() if e["event_type"] == "flush")
-            optimal_refills = flushes / 1.5  # Assuming optimal ratio is 1.5
-            current_refills = sum(1 for e in requests.get(WATERLOG_API).json() if e["event_type"] == "water_refill")
-            additional_refills_needed = max(0, optimal_refills - current_refills)
-
-            for _ in range(int(additional_refills_needed)):
-                self.send_water_refill()
-
-            print("✅ Full refill and balance completed.")
+            # Simulate 50 water refill events
+            for i in range(50):
+                event_data = {
+                    "event_type": "water_refill",
+                    "water_added": 20,  # Example value
+                    "timestamp": time.time() - i * 60  # Each event 1 minute apart
+                }
+                response = requests.post(LIVE_TRACK_API, json=event_data)
+                if response.status_code != 201:
+                    print(f"❌ Failed to log water refill event. Response: {response.text}")
+                    break
+            print("✅ Full refill simulated successfully.")
+            self.update_data()  # Refresh the dashboard
         except Exception as e:
-            print("❌ Error during full refill and balance:", e)
+            print(f"❌ Error simulating full refill: {e}")
 
     def update_chart(self):
         """Fetches event data and updates the line chart with trend insights."""
@@ -359,13 +387,19 @@ class ViewPortApp:
                 print("⚠️ No event data available for chart.")
                 return  # Avoid processing empty data
 
+            # Filter events to only include those from the last 24 hours
+            one_day_ago = datetime.now() - timedelta(days=1)
+            recent_events = [event for event in events if datetime.fromtimestamp(event['timestamp']) >= one_day_ago]
+
             event_counts = {"Flushes": 0, "Water Refills": 0}
             ratios = []
             ratio_times = []
             flush_count = 0
             refill_count = 0
 
-            for event in events:
+            for event in recent_events:
+                timestamp = datetime.fromtimestamp(event['timestamp'])
+                
                 if event['event_type'] == 'flush':
                     flush_count += 1
                     event_counts["Flushes"] += 1
@@ -375,7 +409,7 @@ class ViewPortApp:
 
                 if refill_count > 0:
                     ratios.append(flush_count / refill_count)
-                    ratio_times.append(datetime.fromtimestamp(event['timestamp']))
+                    ratio_times.append(timestamp)
 
             # Clear existing chart
             for widget in self.chart_frame.winfo_children():
@@ -387,24 +421,99 @@ class ViewPortApp:
 
             # Create ratio line chart
             fig, ax = plt.subplots(figsize=(6, 3))
-            ax.plot_date(ratio_times, ratios, 'm-', label='Flush-to-Refill Ratio')
+            ax.plot(ratio_times, ratios, 'm-', label='Flush-to-Refill Ratio')
             ax.set_title('Flush-to-Refill Ratio Over Time')
             ax.set_ylabel('Ratio')
             ax.legend()
+
+            # Hide x-axis labels
+            ax.xaxis.set_ticklabels([])
 
             # Embed the chart
             canvas = FigureCanvasTkAgg(fig, master=self.chart_frame)
             canvas.draw()
             canvas.get_tk_widget().pack()
 
-            # Add total counts below the chart
+            # Add total counts and ratio below the chart
             flush_total_label = tk.Label(self.chart_frame, text=f'Total Flushes: {event_counts["Flushes"]}', font=("Arial", 10))
             flush_total_label.pack()
             refill_total_label = tk.Label(self.chart_frame, text=f'Total Water Refills: {event_counts["Water Refills"]}', font=("Arial", 10))
             refill_total_label.pack()
 
+            # Calculate and display the flush-to-refill ratio
+            if refill_count > 0:
+                ratio = flush_count / refill_count
+                ratio_label = tk.Label(self.chart_frame, text=f'Flush-to-Refill Ratio: {ratio:.2f}', font=("Arial", 10, "bold"))
+                ratio_label.pack()
+
+                # Add warning brackets based on ratio
+                if ratio > 2.0:
+                    warning_label = tk.Label(self.chart_frame, text='⚠️ High Flush-to-Refill Ratio! Consider refilling.', font=("Arial", 10, "bold"), fg='red')
+                    warning_label.pack()
+                elif ratio > 0.5 and ratio < 2.0:
+                    warning_label = tk.Label(self.chart_frame, text='You flush and fill at a good rate!', font=("Arial", 10, "bold"), fg='green')
+                    warning_label.pack()
+                elif ratio < 0.5:
+                    warning_label = tk.Label(self.chart_frame, text='⚠️ Low Flush-to-Refill Ratio! Consider flushing.', font=("Arial", 10, "bold"), fg='orange')
+                    warning_label.pack()
+
         except Exception as e:
             print(f"❌ Error updating chart: {e}")
+
+    def simulate_massive_flush(self):
+        """Simulates a massive waste flush by sending multiple flush events with recent timestamps."""
+        try:
+            for i in range(50):  # Simulate 50 flush events
+                event_data = {
+                    "event_type": "flush",
+                    "waste_volume": 3,
+                    "timestamp": time.time() - i * 60  # Each event 1 minute apart
+                }
+                response = requests.post(LIVE_TRACK_API, json=event_data)
+                if response.status_code != 201:
+                    print(f"❌ Failed to log flush event. Response: {response.text}")
+                    break
+            print("✅ Massive waste flush simulated successfully.")
+            self.update_data()  # Refresh the dashboard
+        except Exception as e:
+            print(f"❌ Error simulating massive waste flush: {e}")
+
+    def open_astronaut_readme(self):
+        """Opens the astronaut-specific guide file in a new Tkinter window."""
+        readme_path = os.path.join(BASE_DIR, 'microservices', 'ViewPort', 'Astronaut_Guide.txt')
+        if os.path.exists(readme_path):
+            with open(readme_path, 'r') as file:
+                content = file.read()
+
+            # Create a new window
+            guide_window = tk.Toplevel(self.root)
+            guide_window.title("Astronaut Guide")
+            guide_window.geometry("600x400")
+
+            # Add a text widget to display the content
+            text_widget = tk.Text(guide_window, wrap='word')
+            text_widget.insert('1.0', content)
+            text_widget.config(state='disabled')  # Make the text widget read-only
+            text_widget.pack(expand=True, fill='both')
+        else:
+            print("❌ Astronaut Guide file not found.")
+
+    def open_picture_book(self):
+        """Opens the manualphoto.png image in a new Tkinter window."""
+        image_path = os.path.join(BASE_DIR, 'gui', 'manualphoto.png')
+        if os.path.exists(image_path):
+            # Create a new window
+            image_window = tk.Toplevel(self.root)
+            image_window.title("Picture Book Explanation")
+
+            # Load and display the image
+            img = Image.open(image_path)
+            img = ImageTk.PhotoImage(img)
+            img_label = tk.Label(image_window, image=img)
+            img_label.image = img  # Keep a reference to avoid garbage collection
+            img_label.pack(expand=True, fill='both')
+        else:
+            print("❌ Manual photo not found.")
 
 
 if __name__ == "__main__":

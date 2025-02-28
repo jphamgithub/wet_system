@@ -42,6 +42,9 @@ def log_event():
     """
     data = request.json
 
+    if not isinstance(data, dict):
+        return jsonify({"error": "Invalid data format, expected a single event object"}), 400
+
     event_type = data.get("event_type")
     waste_volume = data.get("waste_volume")
     water_added = data.get("water_added")
@@ -99,6 +102,44 @@ def clear_database():
 
     return jsonify({"status": "Database cleared"}), 200
 
+@app.route('/log_batch', methods=['POST'])
+def log_batch_events():
+    """
+    Logs multiple astronaut activity events in a single batch.
+    """
+    data = request.json
+
+    if not isinstance(data, list):
+        return jsonify({"error": "Invalid data format, expected a list of events"}), 400
+
+    conn = sqlite3.connect(DATABASE)
+    c = conn.cursor()
+
+    try:
+        for event in data:
+            event_type = event.get("event_type")
+            waste_volume = event.get("waste_volume")
+            water_added = event.get("water_added")
+            planet_name = event.get("planet_name")
+            timestamp = event.get("timestamp")
+
+            if not event_type or not timestamp:
+                return jsonify({"error": "Invalid event data"}), 400
+
+            # Insert new event
+            c.execute('''
+                INSERT INTO events (event_type, waste_volume, water_added, planet_name, timestamp)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (event_type, waste_volume, water_added, planet_name, timestamp))
+
+        conn.commit()  # ✅ Ensure all data is saved!
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
+
+    return jsonify({"status": "Batch events logged successfully"}), 201
 
 if __name__ == '__main__':
     init_db()

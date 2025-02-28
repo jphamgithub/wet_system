@@ -107,3 +107,60 @@ This will launch all microservices, including:
 ## 🏗 Future Enhancements
 - 🌌 **Interplanetary Water Management**: Connect with external services to monitor **off-world** water sources provided by alien microservices.
 
+# W.E.T. System Dashboard
+
+## Introduction
+The W.E.T. System Dashboard is a graphical user interface (GUI) designed to monitor and control the Water and Environmental Technology (W.E.T.) system. It displays system status, logs astronaut waste events, and provides historical data insights. The dashboard also allows users to control the simulator, manually trigger events, and fetch random motivational quotes, planets, and stations.
+
+## Installation
+1. **Clone the Repository**: Clone the project repository to your local machine.
+   ```bash
+   git clone <repository-url>
+   ```
+2. **Navigate to the Project Directory**: Change into the project directory.
+   ```bash
+   cd WET_System
+   ```
+3. **Install Dependencies**: Ensure you have Python installed, then install the required packages.
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. **Run the Application**: Start the GUI application.
+   ```bash
+   python microservices/ViewPort/view_port.py
+   ```
+
+## Usage
+### GUI Components
+- **System Status**: Displays the current status of the system, including total flushes and water level.
+- **Event History Table**: Shows a log of recent events with details and timestamps.
+- **Chart**: Visualizes the flush-to-refill ratio over time.
+- **Simulator Controls**: Buttons to start, pause, and resume the simulator.
+- **Astronaut Commands**: Buttons to manually log flush and water refill events.
+- **Exploration & Assistance**: Fetches motivational quotes, planets, and stations.
+- **System Maintenance**: Options to refresh the dashboard and clear the database.
+
+### Simulator Controls
+- **Start/Resume Simulator**: Click to start or resume the simulator.
+- **Pause Simulator**: Click to pause the simulator without freezing the GUI.
+
+### Event Logging
+- **Flush Event**: Manually log a flush event by clicking the "Remote Send Flush" button.
+- **Water Refill Event**: Manually log a water refill event by clicking the "Manual Refill from Storage" button.
+
+### Exploration & Assistance
+- **Motivational Quote**: Fetch a random motivational quote.
+- **Nearby Planet**: Lookup a random planet with water resources.
+- **Nearby Station**: Find a station offering plumbing repairs.
+
+### System Maintenance
+- **Refresh Dashboard**: Update the display with the latest data.
+- **Reset System**: Clear all stored events in the database.
+
+## Troubleshooting
+- **Error Fetching Data**: Ensure the WaterLog API is running and accessible.
+- **Simulator Issues**: Check if the simulator process is running and not blocked by other applications.
+
+## Contact Information
+For support or contributions, please contact [Your Contact Information].
+

@@ -1,0 +1,33 @@
+W.E.T. System User Manual
+🚀 Water Extraction & Transformation System Interface 🚀
+
+1. System Status
+Displays real-time flush count and water level.
+Ensure Water Level: OK is displayed. If not, initiate a refill.
+
+2. Event Log
+Shows recent flushes, water refills, and planet visits.
+Time-stamped for tracking.
+
+3. Flush-to-Refill Ratio Chart
+Monitors waste-to-water balance over time.
+High ratios (>2.0) = 🚨 Low water, refill needed.
+Low ratios (<0.5) = ⚠️ Too much water, check system.
+
+4. Controls
+Pause/Resume Simulator – Stops or starts the simulation.
+Remote Send Flush – Logs a manual flush event.
+Manual Refill from Storage – Adds water to the system.
+Massive Waste Event – Simulates high astronaut usage.
+Massive Water Refill – Simulates bulk water delivery.
+
+5. Exploration & Assistance
+Feeling Lonely? – Fetches a motivational quote.
+Lookup Planet – Finds a nearby planet with water resources.
+Find Station – Locates a station with plumbing services.
+
+6. System Maintenance
+Refresh Dashboard – Updates all system data.
+Reset System! – Clears all event logs.
+
+🛰 Reminder: Keep the flush-to-refill ratio balanced for optimal performance. 🚽💧
