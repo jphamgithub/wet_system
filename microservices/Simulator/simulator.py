@@ -42,8 +42,8 @@ def generate_event():
         return {"event_type": "flush", "waste_volume": random.randint(1, 5), "timestamp": time.time()}
     elif event_type == "water_refill":
         return {"event_type": "water_refill", "water_added": random.randint(10, 50), "timestamp": time.time()}
-    else:  # planet_visit
-        return {"event_type": "planet_visit", "planet_name": random.choice(["Mars", "Europa", "Titan", "Ganymede"]), "timestamp": time.time()}
+    #else:  # planet_visit
+      # return {"event_type": "planet_visit", "planet_name": random.choice(["Mars", "Europa", "Titan", "Ganymede"]), "timestamp": time.time()}
 
 # Modified loop that stops when running = False
 while running:
