@@ -20,6 +20,7 @@ import os
 from PIL import Image, ImageTk
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from datetime import datetime
 
 # Get the absolute path to the script's directory
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
@@ -39,82 +40,155 @@ class ViewPortApp:
         self.root = root
         self.root.title("🚀 W.E.T. System Dashboard")
 
+        # Set a light gray background
+        self.root.configure(bg='#f5f5f5')  # Light gray background
+
+        # Set minimum window size
+        self.root.minsize(800, 600)
+
         # ========== IMAGE SETUP ==========
         self.toilet_img_path = os.path.join(BASE_DIR, "gui", "toilet.png")
         self.poop_img_path = os.path.join(BASE_DIR, "gui", "spacepoop.png")
 
         self.toilet_img = ImageTk.PhotoImage(Image.open(self.toilet_img_path).resize((150, 150)))
-        self.img_label = tk.Label(root, image=self.toilet_img)
-        self.img_label.pack()
+
+        # Create a canvas and scrollbar for the entire window
+        self.canvas = tk.Canvas(root, bg='#ffffff')
+        self.scrollbar = ttk.Scrollbar(root, orient="vertical", command=self.canvas.yview)
+        self.scrollable_frame = ttk.Frame(self.canvas, style='TFrame')
+
+        self.scrollable_frame.bind(
+            "<Configure>",
+            lambda e: self.canvas.configure(
+                scrollregion=self.canvas.bbox("all")
+            )
+        )
+
+        self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
+
+        # Adjust layout settings to prevent stretching
+        self.canvas.pack(side="left", fill="both", expand=True)
+        self.scrollbar.pack(side="right", fill="y")
+        self.scrollbar_horizontal = ttk.Scrollbar(root, orient="horizontal", command=self.canvas.xview)
+        self.canvas.configure(xscrollcommand=self.scrollbar_horizontal.set)
+
+        self.scrollbar_horizontal.pack(side="bottom", fill="x")
+
+        # Ensure horizontal scrollbar for the overall window
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+        # Update widget parents to scrollable_frame
+        self.img_label = tk.Label(self.scrollable_frame, image=self.toilet_img, borderwidth=2, relief="solid")
+        self.status_label = tk.Label(self.scrollable_frame, text="System Status: Loading...", font=("Arial", 12, "bold"))
+        self.tree = ttk.Treeview(self.scrollable_frame, columns=("Type", "Details", "Time"), show="headings")
+        self.chart_frame = tk.Frame(self.scrollable_frame)
+        self.chart_insight_label = tk.Label(self.scrollable_frame, text="", font=("Arial", 10, "italic"))
+        button_frame = tk.Frame(self.scrollable_frame)
 
         # ========== STATUS & EVENT DISPLAY ==========
-        self.status_label = tk.Label(root, text="System Status: Loading...", font=("Arial", 12, "bold"))
-        self.status_label.pack()
+        self.status_label.pack(expand=False, fill='both', pady=2)
 
-        # Event History Table
-        self.tree = ttk.Treeview(root, columns=("Type", "Details", "Time"), show="headings")
+        # Update styles for labels
+        self.status_label.config(bg='#f5f5f5', fg='#333333')
+        self.quote_label = tk.Label(self.scrollable_frame, text="Fetching inspiration...", font=("Arial", 10, "italic"), wraplength=400)
+        self.quote_label.pack(pady=2)
+        self.quote_label.config(bg='#f5f5f5', fg='#333333')
+
+        self.planet_label = tk.Label(self.scrollable_frame, text="🪐 Nearby Planet Lookup: Loading...", font=("Arial", 10, "bold"))
+        self.planet_label.pack(pady=2)
+        self.planet_label.config(bg='#f5f5f5', fg='#333333')
+
+        self.station_label = tk.Label(self.scrollable_frame, text="🏠 Nearby Station Lookup: Loading...", font=("Arial", 10, "bold"))
+        self.station_label.pack(pady=2)
+        self.station_label.config(bg='#f5f5f5', fg='#333333')
+
+        # Event History Table (Logs)
         self.tree.heading("Type", text="Event Type")
         self.tree.heading("Details", text="Details")
         self.tree.heading("Time", text="Timestamp")
-        self.tree.pack(pady=5)
+        self.tree.pack(expand=True, fill='both', pady=2)
 
-        # Chart Frame with Insights
-        self.chart_frame = tk.Frame(root)
-        self.chart_frame.pack(pady=5)
+        # Chart Frame & Insights
+        self.chart_frame.pack(expand=True, fill='both', pady=2)
+        self.chart_insight_label.pack(expand=False, fill='both', pady=2)
 
-        self.chart_insight_label = tk.Label(root, text="", font=("Arial", 10, "italic"))
-        self.chart_insight_label.pack()
+        # Update styles for labels
+        self.quote_label = tk.Label(self.scrollable_frame, text="Fetching inspiration...", font=("Arial", 10, "italic"), wraplength=400)
+        self.quote_label.pack(pady=2)
 
-        # ========== MOTIVATIONAL QUOTE & INFO ==========
-        self.quote_label = tk.Label(root, text="Fetching inspiration...", font=("Arial", 10, "italic"), wraplength=400)
-        self.quote_label.pack(pady=5)
+        self.planet_label = tk.Label(self.scrollable_frame, text="🪐 Nearby Planet Lookup: Loading...", font=("Arial", 10, "bold"))
+        self.planet_label.pack(pady=2)
 
-        self.planet_label = tk.Label(root, text="🪐 Nearby Planet Lookup: Loading...", font=("Arial", 10, "bold"))
-        self.planet_label.pack()
-
-        self.station_label = tk.Label(root, text="🏠 Nearby Station Lookup: Loading...", font=("Arial", 10, "bold"))
-        self.station_label.pack()
+        self.station_label = tk.Label(self.scrollable_frame, text="🏠 Nearby Station Lookup: Loading...", font=("Arial", 10, "bold"))
+        self.station_label.pack(pady=2)
 
         # ========== BUTTON CONTROLS ==========
-        button_frame = tk.Frame(root)
-        button_frame.pack(pady=10)
+        button_frame.pack(expand=False, fill='both', pady=5)
+
+        # Configure grid rows and columns to be responsive
+        for i in range(9):
+            button_frame.grid_rowconfigure(i, weight=1)
+        button_frame.grid_columnconfigure(0, weight=1)
+        button_frame.grid_columnconfigure(1, weight=1)
+
+        # Update styles for buttons with distinct background color
+        button_style = {'bg': '#ffffff', 'fg': '#000000', 'activebackground': '#dddddd', 'activeforeground': '#000000', 'font': ('Arial', 10, 'bold'), 'borderwidth': 1, 'relief': 'flat'}
 
         # ---- Simulator Controls ----
         tk.Label(button_frame, text="🚀 Simulator Controls", font=("Arial", 10, "bold")).grid(row=0, column=0, columnspan=2)
         self.simulator_status = tk.StringVar(value="⏸ Pause Simulator")
         self.sim_button = tk.Button(button_frame, textvariable=self.simulator_status, command=self.toggle_simulator)
-        self.sim_button.grid(row=1, column=0, padx=5, columnspan=2)
+        self.sim_button.grid(row=1, column=0, columnspan=2, padx=5, pady=2, sticky='ew')
 
         # ---- Astronaut Commands ----
         tk.Label(button_frame, text="🧑‍🚀 Astronaut Commands", font=("Arial", 10, "bold")).grid(row=2, column=0, columnspan=2)
         self.flush_button = tk.Button(button_frame, text="🚽 Remote Send Flush", command=self.send_flush_event)
-        self.flush_button.grid(row=3, column=0, padx=5)
+        self.flush_button.grid(row=3, column=0, padx=5, pady=2, sticky='ew')
 
-        self.refill_button = tk.Button(button_frame, text="💧 Hyper Drive & Refill", command=self.send_water_refill)
-        self.refill_button.grid(row=3, column=1, padx=5)
+        self.manual_refill_button = tk.Button(button_frame, text="💧 Manual Refill from Storage", command=self.send_water_refill)
+        self.manual_refill_button.grid(row=3, column=1, padx=5, pady=2, sticky='ew')
 
         # ---- Exploration & Assistance ----
-        tk.Label(button_frame, text="🔭 Exploration & Assistance", font=("Arial", 10, "bold")).grid(row=4, column=0, columnspan=2)
+        tk.Label(button_frame, text="🔭 Exploration & Assistance", font=("Arial", 10, "bold")).grid(row=5, column=0, columnspan=2)
         self.quote_button = tk.Button(button_frame, text="🌟 Feeling lonely?", command=self.fetch_motivational_quote)
-        self.quote_button.grid(row=5, column=0, padx=5)
+        self.quote_button.grid(row=6, column=0, padx=5, pady=2, sticky='ew')
 
         self.planet_button = tk.Button(button_frame, text="🪐 Lookup Planet", command=self.fetch_nearby_planet)
-        self.planet_button.grid(row=5, column=1, padx=5)
+        self.planet_button.grid(row=6, column=1, padx=5, pady=2, sticky='ew')
 
         self.station_button = tk.Button(button_frame, text="🏠 Find Station", command=self.fetch_nearby_station)
-        self.station_button.grid(row=6, column=0, columnspan=2)
+        self.station_button.grid(row=7, column=0, columnspan=2, padx=5, pady=2, sticky='ew')
+
+        # Add a new button for full refill and balance
+        self.full_refill_button = tk.Button(button_frame, text="🌍 Full Refill & Balance", command=self.full_refill_and_balance)
+        self.full_refill_button.grid(row=4, column=1, padx=5, pady=2, sticky='ew')
+        self.full_refill_button.config(**button_style)
 
         # ---- System Maintenance ----
-        tk.Label(button_frame, text="🛠 System Maintenance", font=("Arial", 10, "bold")).grid(row=7, column=0, columnspan=2)
+        tk.Label(button_frame, text="🛠 System Maintenance", font=("Arial", 10, "bold")).grid(row=8, column=0, columnspan=2)
         self.refresh_button = tk.Button(button_frame, text="🔄 Refresh Dashboard", command=self.update_data)
-        self.refresh_button.grid(row=8, column=0, columnspan=2)
+        self.refresh_button.grid(row=9, column=0, padx=5, pady=2, sticky='ew')
 
         self.clear_button = tk.Button(button_frame, text="🗑 Reset System!", command=self.clear_database)
-        self.clear_button.grid(row=9, column=0, columnspan=2)
+        self.clear_button.grid(row=9, column=1, padx=5, pady=2, sticky='ew')
+
+        # Apply button styles
+        self.sim_button.config(**button_style)
+        self.flush_button.config(**button_style)
+        self.manual_refill_button.config(**button_style)
+        self.quote_button.config(**button_style)
+        self.planet_button.config(**button_style)
+        self.station_button.config(**button_style)
+        self.refresh_button.config(**button_style)
+        self.clear_button.config(**button_style)
 
         # ========== INITIALIZATION ==========
         self.start_simulator()
         self.update_data()
+
+        # Pack the image label at the top
+        self.img_label.pack(side="top", expand=False, fill='both', pady=10)
 
     def update_data(self):
         """Fetches and updates event data, charts, and motivational quote."""
@@ -138,7 +212,8 @@ class ViewPortApp:
             # Show all events
             for event in events:
                 details = event.get("waste_volume") or event.get("water_added") or event.get("planet_name") or "N/A"
-                self.tree.insert("", "end", values=(event["event_type"], details, event["timestamp"]))
+                timestamp = datetime.fromtimestamp(event["timestamp"]).strftime('%Y-%m-%d %H:%M:%S')
+                self.tree.insert("", "end", values=(event["event_type"], details, timestamp))
 
             # Update system status based on latest data
             flushes = sum(1 for e in events if e["event_type"] == "flush")
@@ -148,7 +223,7 @@ class ViewPortApp:
             self.status_label.config(text="❌ Error fetching event data!")
 
         # Auto-refresh every 5 seconds
-        self.root.after(1000, self.fetch_event_history)
+        self.root.after(5000, self.fetch_event_history)
     
     def update_chart(self):
         """Fetches event data and updates the bar chart with ratio-based insights."""
@@ -205,31 +280,34 @@ class ViewPortApp:
 
 
     def fetch_motivational_quote(self):
-        """Calls name_generator.py to fetch a random quote."""
+        """Fetches a new motivational quote and updates the display."""
         try:
             quote = subprocess.check_output(["python3", NAME_GEN_PATH, "--quote"], text=True).strip()
             self.quote_label.config(text=f"🌟 {quote} 🌟")
         except Exception:
             self.quote_label.config(text="🚀 Keep pushing forward, astronaut! 🌌")
+        
+        self.root.update_idletasks()  # Force UI update
 
     def fetch_nearby_planet(self):
-        """Fetches a random planet and ties it to the toilet system."""
+        """Fetches a random planet and updates the display immediately."""
         try:
             planet = subprocess.check_output(["python3", NAME_GEN_PATH, "--planet"], text=True).strip()
-            message = f"🪐 {planet} has rich water resources! Consider refilling the system there."
-            self.planet_label.config(text=message)
+            self.planet_label.config(text=f"🪐 {planet} has rich water resources! Consider refilling the system there.")
         except Exception:
             self.planet_label.config(text="🪐 Unknown planet detected. Water status uncertain.")
-
+        
+        self.root.update_idletasks()  # Force UI refresh
 
     def fetch_nearby_station(self):
-        """Fetches a nearby station and suggests plumbing services."""
+        """Fetches a nearby station and updates the display immediately."""
         try:
             station = subprocess.check_output(["python3", NAME_GEN_PATH, "--station"], text=True).strip()
-            message = f"🏠 {station} offers expert plumbing repairs for your space toilet!"
-            self.station_label.config(text=message)
+            self.station_label.config(text=f"🏠 {station} offers expert plumbing repairs for your space toilet!")
         except Exception:
             self.station_label.config(text="🏠 No plumbing stations nearby. Proceed with caution!")
+        
+        self.root.update_idletasks()  # Force UI refresh
 
     def send_flush_event(self):
         """Manually logs a flush event and temporarily changes the image."""
@@ -245,6 +323,7 @@ class ViewPortApp:
             self.toilet_img = ImageTk.PhotoImage(Image.open(self.poop_img_path).resize((150, 150)))
             self.img_label.config(image=self.toilet_img)
             self.root.after(2000, self.reset_toilet_image)  # Reset after 2 seconds
+            self.update_data()  # Refresh the dashboard
         else:
             print(f"❌ Failed to log flush event. Response: {response.text}")
 
@@ -263,6 +342,7 @@ class ViewPortApp:
         response = requests.post(LIVE_TRACK_API, json=event_data)
         if response.status_code == 201:
             print("✅ Water refill event logged successfully.")
+            self.update_data()  # Refresh the dashboard
         else:
             print(f"❌ Failed to log water refill event. Response: {response.text}")
 
@@ -317,6 +397,21 @@ class ViewPortApp:
             self.update_data()  # Refresh the UI after clearing
         else:
             print("❌ Failed to clear database. Response:", response.text)
+
+    def full_refill_and_balance(self):
+        """Performs a full refill and balances the water-to-flush ratio."""
+        try:
+            flushes = sum(1 for e in requests.get(WATERLOG_API).json() if e["event_type"] == "flush")
+            optimal_refills = flushes / 1.5  # Assuming optimal ratio is 1.5
+            current_refills = sum(1 for e in requests.get(WATERLOG_API).json() if e["event_type"] == "water_refill")
+            additional_refills_needed = max(0, optimal_refills - current_refills)
+
+            for _ in range(int(additional_refills_needed)):
+                self.send_water_refill()
+
+            print("✅ Full refill and balance completed.")
+        except Exception as e:
+            print("❌ Error during full refill and balance:", e)
 
 if __name__ == "__main__":
     root = tk.Tk()
