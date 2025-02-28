@@ -113,16 +113,6 @@ class ViewPortApp:
         self.chart_frame.pack(expand=True, fill='both', pady=2)
         self.chart_insight_label.pack(expand=False, fill='both', pady=2)
 
-        # Update styles for labels
-        self.quote_label = tk.Label(self.scrollable_frame, text="Fetching inspiration...", font=("Arial", 10, "italic"), wraplength=400)
-        self.quote_label.pack(pady=2)
-
-        self.planet_label = tk.Label(self.scrollable_frame, text="🪐 Nearby Planet Lookup: Loading...", font=("Arial", 10, "bold"))
-        self.planet_label.pack(pady=2)
-
-        self.station_label = tk.Label(self.scrollable_frame, text="🏠 Nearby Station Lookup: Loading...", font=("Arial", 10, "bold"))
-        self.station_label.pack(pady=2)
-
         # ========== BUTTON CONTROLS ==========
         button_frame.pack(expand=False, fill='both', pady=5)
 
@@ -193,10 +183,10 @@ class ViewPortApp:
     def update_data(self):
         """Fetches and updates event data, charts, and motivational quote."""
         self.fetch_event_history()
-        self.update_chart()
         self.fetch_motivational_quote()
         self.fetch_nearby_planet()
         self.fetch_nearby_station()
+        self.update_chart()
 
     def fetch_event_history(self):
         """Fetches event history from WaterLog API and dynamically updates the table."""
@@ -225,60 +215,6 @@ class ViewPortApp:
         # Auto-refresh every 5 seconds
         self.root.after(5000, self.fetch_event_history)
     
-    def update_chart(self):
-        """Fetches event data and updates the bar chart with ratio-based insights."""
-        try:
-            response = requests.get(WATERLOG_API)
-            events = response.json()
-
-            event_counts = {"Flushes": 0, "Water Refills": 0, "Planet Visits": 0}
-            for event in events:
-                if event["event_type"] == "flush":
-                    event_counts["Flushes"] += 1
-                elif event["event_type"] == "water_refill":
-                    event_counts["Water Refills"] += 1
-                elif event["event_type"] == "planet_visit":
-                    event_counts["Planet Visits"] += 1
-
-            # Clear existing chart
-            for widget in self.chart_frame.winfo_children():
-                widget.destroy()
-
-            # Create new chart
-            fig, ax = plt.subplots(figsize=(4, 2))
-            ax.bar(event_counts.keys(), event_counts.values(), color=["blue", "green", "red"])
-            ax.set_ylabel("Event Count")
-            ax.set_title("Astronaut Waste Tracking")
-
-            canvas = FigureCanvasTkAgg(fig, master=self.chart_frame)
-            canvas.draw()
-            canvas.get_tk_widget().pack()
-
-            # ---- Compute Flush-to-Refill Ratio ----
-            flushes = event_counts["Flushes"]
-            refills = event_counts["Water Refills"]
-
-            if refills == 0:
-                ratio = float("inf")  # Avoid division by zero
-            else:
-                ratio = flushes / refills
-
-            # ---- Generate Insights Based on Ratio ----
-            if ratio > 3:
-                insight_text = "🚨 WARNING: The system is running out of water! Refill ASAP."
-            elif 2 < ratio <= 3:
-                insight_text = "⚠️ Caution: Water levels decreasing. Consider refilling soon."
-            elif 0.5 <= ratio <= 2:
-                insight_text = "✅ System is running optimally."
-            else:  # ratio < 0.5
-                insight_text = "🚰 Water refills exceed usage. Check for leaks or inefficiency."
-
-            self.chart_insight_label.config(text=insight_text, font=("Arial", 10, "italic"))
-        
-        except Exception as e:
-            print("❌ Error updating chart:", e)
-
-
     def fetch_motivational_quote(self):
         """Fetches a new motivational quote and updates the display."""
         try:
@@ -412,6 +348,64 @@ class ViewPortApp:
             print("✅ Full refill and balance completed.")
         except Exception as e:
             print("❌ Error during full refill and balance:", e)
+
+    def update_chart(self):
+        """Fetches event data and updates the line chart with trend insights."""
+        try:
+            response = requests.get(WATERLOG_API)
+            events = response.json()
+
+            if not events:
+                print("⚠️ No event data available for chart.")
+                return  # Avoid processing empty data
+
+            event_counts = {"Flushes": 0, "Water Refills": 0}
+            ratios = []
+            ratio_times = []
+            flush_count = 0
+            refill_count = 0
+
+            for event in events:
+                if event['event_type'] == 'flush':
+                    flush_count += 1
+                    event_counts["Flushes"] += 1
+                elif event['event_type'] == 'water_refill':
+                    refill_count += 1
+                    event_counts["Water Refills"] += 1
+
+                if refill_count > 0:
+                    ratios.append(flush_count / refill_count)
+                    ratio_times.append(datetime.fromtimestamp(event['timestamp']))
+
+            # Clear existing chart
+            for widget in self.chart_frame.winfo_children():
+                widget.destroy()
+
+            if not ratio_times or not ratios:
+                print("⚠️ No valid ratio data for chart. Skipping plot.")
+                return  # Avoid plotting empty charts
+
+            # Create ratio line chart
+            fig, ax = plt.subplots(figsize=(6, 3))
+            ax.plot_date(ratio_times, ratios, 'm-', label='Flush-to-Refill Ratio')
+            ax.set_title('Flush-to-Refill Ratio Over Time')
+            ax.set_ylabel('Ratio')
+            ax.legend()
+
+            # Embed the chart
+            canvas = FigureCanvasTkAgg(fig, master=self.chart_frame)
+            canvas.draw()
+            canvas.get_tk_widget().pack()
+
+            # Add total counts below the chart
+            flush_total_label = tk.Label(self.chart_frame, text=f'Total Flushes: {event_counts["Flushes"]}', font=("Arial", 10))
+            flush_total_label.pack()
+            refill_total_label = tk.Label(self.chart_frame, text=f'Total Water Refills: {event_counts["Water Refills"]}', font=("Arial", 10))
+            refill_total_label.pack()
+
+        except Exception as e:
+            print(f"❌ Error updating chart: {e}")
+
 
 if __name__ == "__main__":
     root = tk.Tk()
