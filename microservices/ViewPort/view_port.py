@@ -337,7 +337,7 @@ class ViewPortApp:
         simulator_process = None
 
     def start_simulator(self):
-        """Starts the simulator process."""
+        """Starts the simulator process and schedules dashboard updates."""
         print("✅ Starting Simulator...")
         global simulator_process
         simulator_process = subprocess.Popen(
@@ -347,6 +347,14 @@ class ViewPortApp:
         )
         self.simulator_status.set("⏸ Pause Simulator")
         print("🚀 Simulator Running.")
+        self.schedule_dashboard_updates()  # Start updating the dashboard
+
+    def schedule_dashboard_updates(self):
+        """Schedules regular updates for the dashboard when the simulator is running."""
+        if simulator_process:
+            self.update_data()
+            # Schedule the next update in 5 seconds
+            self.root.after(5000, self.schedule_dashboard_updates)
 
     def clear_database(self):
         """Sends a request to WaterLog API to clear all stored events."""
